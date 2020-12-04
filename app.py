@@ -1,14 +1,15 @@
-from flask import Flask, render_template, request, redirect, flash
+from flask import Flask, render_template, request, redirect, flash, session
 from flask_debugtoolbar import DebugToolbarExtension
 from surveys import satisfaction_survey
 
 app = Flask(__name__)
-app.config['SECRET_KEY'] = "oh-so-secret"
+app.config["SECRET_KEY"] = "SHHHHHHHHHHH SEEKRIT"
 
 debug = DebugToolbarExtension(app)
 app.config['DEBUG_TB_INTERCEPT_REDIRECTS'] = False
 
 responses = []
+user_responses = "responses"
 
 @app.route('/')
 def home():
@@ -18,13 +19,14 @@ def home():
 @app.route('/start', methods=["GET", "POST"])
 def start_survey():
     """Renders first question"""
-    responses = []
+    session[user_responses] = []
     return redirect("/questions/0")
 
 
 @app.route('/questions/<int:num>', methods=["GET", "POST"])
 def question_page(num):
     """Renders current question"""
+    responses = session.get(user_responses)
     # prevent user from trying to access a question number above our question count
     if (num > len(satisfaction_survey.questions)):
         return redirect(f'/questions/{len(responses)}')
@@ -48,7 +50,9 @@ def answers():
     """Save response and redirect to next question."""
     # get the response choice
     choice = request.form['answer']
+    responses = session[user_responses]
     responses.append(choice)
+    session[user_responses] = responses
 
     if (len(responses) == len(satisfaction_survey.questions)):
         # They've answered all the questions! Thank them.
